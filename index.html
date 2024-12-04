@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Рейтинг фильмов</title>
+  <style>
+    /* Общие стили для страницы */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(to top left, #ff7e5f, #feb47b); /* Градиентный фон */
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-size: cover;
+      background-attachment: fixed;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .container {
+      background: rgba(0, 0, 0, 0.7); /* Полупрозрачный черный фон */
+      padding: 30px;
+      border-radius: 15px;
+      width: 100%;
+      max-width: 800px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+    }
+
+    .movie-item {
+      margin: 20px 0;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1.2rem;
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .movie-item p {
+      margin: 0;
+    }
+
+    .rating {
+      display: flex;
+      gap: 8px;
+    }
+
+    .star {
+      font-size: 1.8rem;
+      cursor: pointer;
+      color: #ffd700;
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+
+    .star:hover,
+    .star.selected {
+      color: #ff4500;
+      transform: scale(1.2);
+    }
+
+    .button {
+      padding: 12px 24px;
+      background-color: #32cd32;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.3s;
+    }
+
+    .button:hover {
+      background-color: #28a745;
+      transform: scale(1.1);
+    }
+
+    .message {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #ff6347;
+      animation: fadeIn 1s ease-out;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Рейтинг фильмов</h1>
+
+    <!-- Список фильмов (динамически сгенерированный) -->
+    <div id="movie-list"></div>
+
+    <button class="button" id="submit-ratings">Отправить оценки</button>
+    <p class="message" id="message"></p>
+  </div>
+
+  <script>
+    // Массив фильмов с начальными оценками
+    const movies = [
+      { id: 1, title: "Титаник", rating: 0 },
+      { id: 2, title: "Начало", rating: 0 },
+      { id: 3, title: "Интерстеллар", rating: 0 },
+    ];
+
+    // Считываем сохраненные рейтинги из localStorage, если есть
+    const savedRatings = JSON.parse(localStorage.getItem('ratings')) || {};
+    movies.forEach(movie => {
+      if (savedRatings[movie.id]) {
+        movie.rating = savedRatings[movie.id];
+      }
+    });
+
+    // Функция для генерации списка фильмов на странице
+    function generateMovieList() {
+      const movieList = document.getElementById('movie-list');
+      movieList.innerHTML = ''; // Очистить список перед перерисовкой
+      movies.forEach(movie => {
+        const movieItem = document.createElement('div');
+        movieItem.classList.add('movie-item');
+        movieItem.id = `movie-${movie.id}`;
+
+        const movieTitle = document.createElement('p');
+        movieTitle.textContent = `${movie.title}`;
+
+        const ratingContainer = document.createElement('div');
+        ratingContainer.classList.add('rating');
+        for (let i = 1; i <= 5; i++) {
+          const star = document.createElement('span');
+          star.classList.add('star');
+          star.textContent = '★';
+          star.dataset.movie = movie.id;
+          star.dataset.id = i;
+
+          if (i <= movie.rating) {
+            star.classList.add('selected');
+          }
+
+          ratingContainer.appendChild(star);
+        }
+
+        movieItem.appendChild(movieTitle);
+        movieItem.appendChild(ratingContainer);
+        movieList.appendChild(movieItem);
+      });
+
+      addStarListeners();
+    }
+
+    // Функция для добавления слушателей событий на звезды
+    function addStarListeners() {
+      const stars = document.querySelectorAll('.star');
+      stars.forEach(star => {
+        star.addEventListener('click', (event) => {
+          const movieId = event.target.dataset.movie;
+          const starId = event.target.dataset.id;
+          const movie = movies.find(m => m.id == movieId);
+
+          movie.rating = starId; // Обновляем рейтинг фильма
+          localStorage.setItem('ratings', JSON.stringify(getRatings())); // Сохраняем рейтинг
+
+          generateMovieList(); // Перерисовываем список фильмов с новыми рейтингами
+        });
+      });
+    }
+
+    // Функция для получения текущих рейтингов всех фильмов
+    function getRatings() {
+      const ratings = {};
+      movies.forEach(movie => {
+        ratings[movie.id] = movie.rating;
+      });
+      return ratings;
+    }
+
+    // Обработчик кнопки "Отправить оценки"
+    document.getElementById('submit-ratings').addEventListener('click', () => {
+      const averageRatings = movies.map(movie => movie.rating).reduce((a, b) => a + b, 0) / movies.length;
+      const message = document.getElementById('message');
+
+      if (averageRatings === 0) {
+        message.textContent = 'Пожалуйста, поставьте рейтинг для всех фильмов!';
+        message.style.color = 'red';
+      } else {
+        message.textContent = `Спасибо за ваш отзыв! Средний рейтинг: ${averageRatings.toFixed(1)}`;
+        message.style.color = 'green';
+      }
+    });
+
+    // Инициализация страницы
+    generateMovieList();
+  </script>
+
+</body>
+</html>
